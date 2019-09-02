@@ -188,13 +188,13 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 
 size_t CApplication::GetWorkThreadNum() const
 {
-	return m_thread_pool.size();
+	return s_termination_flag ? 0 : m_thread_pool.size();
 }
 
 void CApplication::PrintWorkThreads() const
 {
 	::EnterCriticalSection(&critical_sec);
-	if( m_thread_pool.empty() )
+	if( m_thread_pool.empty() || s_termination_flag )
 	{
 		std::cout << "ThreadPool is empty" << std::endl;
 		return;
