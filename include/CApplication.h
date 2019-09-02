@@ -31,6 +31,10 @@ private:
 	WSADATA m_wsa_data;
 	SOCKET m_listen_sock;
 
+	bool m_is_wsa_init;
+	bool m_is_listen_sock_init;
+	bool m_is_thread_pool_init;
+
 	static DWORD WINAPI ProceedResponse( LPVOID param );
 
 };

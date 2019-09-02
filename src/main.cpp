@@ -6,7 +6,7 @@ int main( int argc, char** argv )
 	{
 		CApplication app;
 		app.Listen();
-
+		
 		short res = 255;
 		std::cout << "Enter '0' to exit..." << std::endl;
 		while(std::cin)
