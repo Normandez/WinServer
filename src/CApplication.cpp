@@ -160,13 +160,20 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 		}
 
 		accept_sock = ::accept( ( (SOCKET*)param )[0], NULL, NULL );
-		if( accept_sock == INVALID_SOCKET )
+		if( accept_sock == INVALID_SOCKET && !s_termination_flag )
 		{
 			::EnterCriticalSection(&critical_sec);
 			std::cout << "Invalid listen_sock. ERROR: " << ::WSAGetLastError() << std::endl;
 			::LeaveCriticalSection(&critical_sec);
 			::closesocket(accept_sock);
 			return 1;
+		}
+		else if(s_termination_flag)
+		{
+			::shutdown( accept_sock, SD_SEND );
+			::closesocket(accept_sock);
+
+			break;
 		}
 
 		char buf[DEFAULT_BUFSIZE];
