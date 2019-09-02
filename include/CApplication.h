@@ -25,6 +25,8 @@ public:
 
 	void Listen();
 
+	size_t GetWorkThreadNum() const;
+
 private:
 	std::vector<std::pair<HANDLE, DWORD>> m_thread_pool;
 

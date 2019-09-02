@@ -112,12 +112,10 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	while(true)
 	{
 		accept_sock = ::accept( ( (SOCKET*)param )[0], NULL, NULL );
-		if ( accept_sock == INVALID_SOCKET )
+		if( accept_sock == INVALID_SOCKET )
 		{
-			std::cout << "Invalid listen_sock" << std::endl;
-			std::cout << "ERROR: " << ::WSAGetLastError() << std::endl;
+			std::cout << "Invalid listen_sock. ERROR: " << ::WSAGetLastError() << std::endl;
 			::closesocket(accept_sock);
-
 			return 1;
 		}
 
@@ -129,6 +127,10 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 		::shutdown( accept_sock, SD_SEND );
 	}
 	
-
 	return 0;
+}
+
+size_t CApplication::GetWorkThreadNum() const
+{
+	return m_thread_pool.size();
 }
