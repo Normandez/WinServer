@@ -1,10 +1,14 @@
 #include "CApplication.h"
 
-static const size_t s_max_thread_pool_size = 15;
-static CRITICAL_SECTION critical_sec;
-
 #define DEFAULT_PORT "27015"
 #define DEFAULT_BUFSIZE 512
+
+namespace
+{
+	static const size_t s_max_thread_pool_size = 15;
+	static CRITICAL_SECTION critical_sec;
+	static bool s_termination_flag = false;
+}
 
 CApplication::CApplication()
 	: m_listen_sock(INVALID_SOCKET),
@@ -68,6 +72,8 @@ CApplication::CApplication()
 
 CApplication::~CApplication()
 {
+	if(!s_termination_flag) StopAllThreads();
+
 	if(m_is_listen_sock_init) ::closesocket(m_listen_sock);
 	if(m_is_wsa_init) ::WSACleanup();
 
@@ -106,11 +112,53 @@ void CApplication::Listen()
 	m_is_thread_pool_init = true;
 }
 
+void CApplication::StopAllThreads()
+{
+	// Set termination flag
+	::EnterCriticalSection(&critical_sec);
+	s_termination_flag = true;
+	::LeaveCriticalSection(&critical_sec);
+	
+	// Stop listening
+	::closesocket(m_listen_sock);
+	m_is_listen_sock_init = false;
+
+	// Threads termination
+	size_t threads_num = m_thread_pool.size();
+	if(threads_num)
+	{
+		HANDLE* lp_threads_handles = new HANDLE[threads_num];
+		for( auto it : m_thread_pool )
+		{
+			*lp_threads_handles++ = it.first;
+		}
+		lp_threads_handles -= threads_num;
+		DWORD dw_wait_res = ::WaitForMultipleObjects( (DWORD)threads_num, lp_threads_handles, TRUE, 10000 );
+		if( dw_wait_res == WAIT_TIMEOUT )
+		{
+			for( size_t it = 0; it < threads_num; it++ )
+			{
+				::TerminateThread( *lp_threads_handles++, 2 );
+			}
+		}
+		delete[] lp_threads_handles;
+	}
+}
+
 DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 {
 	SOCKET accept_sock = INVALID_SOCKET;
 	while(true)
 	{
+		// Thread termination condition
+		if(s_termination_flag)
+		{
+			::shutdown( accept_sock, SD_SEND );
+			::closesocket(accept_sock);
+
+			break;
+		}
+
 		accept_sock = ::accept( ( (SOCKET*)param )[0], NULL, NULL );
 		if( accept_sock == INVALID_SOCKET )
 		{

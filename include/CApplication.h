@@ -24,6 +24,7 @@ public:
 	void operator=( CApplication&& other ) = delete;
 
 	void Listen();
+	void StopAllThreads();
 
 	size_t GetWorkThreadNum() const;
 	void PrintWorkThreads() const;
