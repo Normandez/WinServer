@@ -18,8 +18,11 @@ int main( int argc, char** argv )
 	catch( const std::exception& rt_ex )
 	{
 		std::cout << "Common exception handled: " << rt_ex.what() << std::endl;
+
+		std::getchar();
 		return 1;
 	}
 
+	std::getchar();
 	return 0;
 }
