@@ -5,18 +5,20 @@ int main( int argc, char** argv )
 	try
 	{
 		CApplication app;
-		int res = 255;
+		app.Listen();
+
+		short res = 255;
+		std::cout << "Enter '0' to exit..." << std::endl;
 		while(std::cin)
 		{
 			std::cin >> res;
 			if(!res) break;
-			if( res == 1 ) app.Listen();
 		}
-
 	}
-	catch( const std::runtime_error& rt_ex )
+	catch( const std::exception& rt_ex )
 	{
-		std::cout << rt_ex.what() << std::endl;
+		std::cout << "Common exception handled: " << rt_ex.what() << std::endl;
+		return 1;
 	}
 
 	return 0;

@@ -64,7 +64,7 @@ CApplication::~CApplication()
 	::WSACleanup();
 
 	// Working thread pool cleanup
-	for( size_t count = 0; count < 2; count++ )
+	for( size_t count = 0; count < s_max_thread_pool_size; count++ )
 	{
 		::CloseHandle( m_thread_pool.at(count).first );
 	}
@@ -82,7 +82,7 @@ void CApplication::Listen()
 		return;
 	}
 
-	for( size_t count = 0; count < 2; count++ )
+	for( size_t count = 0; count < s_max_thread_pool_size; count++ )
 	{
 		std::pair<HANDLE, DWORD> new_pair;
 		new_pair.first = ::CreateThread( NULL, 0, &CApplication::ProceedResponse, &m_listen_sock, 0, &new_pair.second );
