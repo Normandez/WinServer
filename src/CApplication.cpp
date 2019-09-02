@@ -135,3 +135,18 @@ size_t CApplication::GetWorkThreadNum() const
 {
 	return m_thread_pool.size();
 }
+
+void CApplication::PrintWorkThreads() const
+{
+	::EnterCriticalSection(&critical_sec);
+	if( m_thread_pool.empty() )
+	{
+		std::cout << "ThreadPool is empty" << std::endl;
+		return;
+	}
+	for( size_t it = 0; it < m_thread_pool.size(); it++ )
+	{
+		std::cout << "WorkThread #" << it << ", HANDLE = " << m_thread_pool.at(it).first << ", ID = " << m_thread_pool.at(it).second << std::endl;
+	}
+	::LeaveCriticalSection(&critical_sec);
+}
