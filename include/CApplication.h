@@ -26,7 +26,10 @@ public:
 	void Listen();
 
 private:
-	std::vector<HANDLE> m_thread_pool;
+	std::vector<std::pair<HANDLE, DWORD>> m_thread_pool;
+
+	WSADATA m_wsa_data;
+	SOCKET m_listen_sock;
 
 	static DWORD WINAPI ProceedResponse( LPVOID param );
 

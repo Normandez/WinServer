@@ -5,11 +5,12 @@ int main( int argc, char** argv )
 	try
 	{
 		CApplication app;
-		int res = 1;
+		int res = 255;
 		while(std::cin)
 		{
 			std::cin >> res;
 			if(!res) break;
+			if( res == 1 ) app.Listen();
 		}
 
 	}
