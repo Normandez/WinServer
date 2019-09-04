@@ -136,6 +136,7 @@ void CApplication::StopAllThreads()
 		DWORD dw_wait_res = ::WaitForMultipleObjects( (DWORD)threads_num, lp_threads_handles, TRUE, 10000 );
 		if( dw_wait_res == WAIT_TIMEOUT )
 		{
+			lp_threads_handles -= threads_num;
 			for( size_t it = 0; it < threads_num; it++ )
 			{
 				::TerminateThread( *lp_threads_handles++, 2 );
@@ -175,7 +176,7 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 
 			break;
 		}
-
+		
 		char buf[DEFAULT_BUFSIZE];
 		int buf_size = DEFAULT_BUFSIZE;
 		::recv( accept_sock, buf, buf_size, 0 );
