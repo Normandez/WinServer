@@ -221,21 +221,21 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 					std::string data = data_match[1].str();
 					std::reverse( data.begin(), data.end() );
 
-					response_data = ConstructResponse( buf_str_lines, "\"{\\\"data\\\":\\\"" + data + "\\\"}\"" );
+					response_data = ConstructResponse( "\"{\\\"data\\\":\\\"" + data + "\\\"}\"", true );
 				}
 				else
 				{
-					response_data = ConstructResponse( buf_str_lines, "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"" );
+					response_data = ConstructResponse( "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"", false );
 				}
 			}
 			else
 			{
-				response_data = ConstructResponse( buf_str_lines, "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"" );
+				response_data = ConstructResponse( "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"", false );
 			}
 		}
 		else
 		{
-			response_data = ConstructResponse( buf_str_lines, "\"{\\\"error\\\":\\\"Not POST request\\\"}\"" );
+			response_data = ConstructResponse( "\"{\\\"error\\\":\\\"Not POST request\\\"}\"", false );
 		}
 
 		// Data sending
@@ -296,9 +296,17 @@ bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_split
 	return false;
 }
 
-std::string CApplication::ConstructResponse( const std::vector<std::string>& recv_splitted, const std::string& response_data )
+std::string CApplication::ConstructResponse( const std::string& response_data, bool is_success )
 {
-	std::string constructed_response = response_data;
+	std::string constructed_response = "";
+
+	if(is_success) constructed_response += "HTTP /1.1 200 OK\n";
+	else constructed_response += "HTTP /1.1 400 Bad Request\n";
+	constructed_response += "Content-Type: application/json\n";
+	constructed_response += "Content-Length: " + std::to_string( (int)response_data.size() );
+	constructed_response += "\n";
+	constructed_response += "Server: WinServer\n\n";
+	constructed_response += response_data;
 
 	return constructed_response;
 }
