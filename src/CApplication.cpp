@@ -214,7 +214,19 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 		{
 			if( IsJsonContentType(buf_str_lines) )
 			{
-				response_data = ConstructResponse( buf_str_lines, "" );
+				std::regex data_regex("\"data\": ?\"(.*)\"");
+				std::smatch data_match;
+				if( std::regex_search( buf_str_lines.back(), data_match, data_regex ) )
+				{
+					std::string data = data_match[1].str();
+					std::reverse( data.begin(), data.end() );
+
+					response_data = ConstructResponse( buf_str_lines, "\"{\\\"data\\\":\\\"" + data + "\\\"}\"" );
+				}
+				else
+				{
+					response_data = ConstructResponse( buf_str_lines, "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"" );
+				}
 			}
 			else
 			{
@@ -256,7 +268,7 @@ bool CApplication::IsPostRequest( const std::vector<std::string>& recv_splitted 
 	
 	std::transform( first_line.begin(), first_line.end(), first_line.begin(), ::toupper );
 
-	return ( first_line == post_str );
+	return ( first_line.substr( 0, post_str.size() ) == post_str );
 }
 
 bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_splitted )
@@ -270,6 +282,10 @@ bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_split
 		if( line.substr( 0, header_content_type_str.size() ) == header_content_type_str )
 		{
 			std::string content_type = line.substr( header_content_type_str.size() );
+			if( content_type.back() == '\r' )
+			{
+				content_type.resize( content_type.size() - 1 );
+			}
 			if( content_type == json_content_type_str || content_type == ( " " + json_content_type_str ) )
 			{
 				return true;
@@ -282,7 +298,7 @@ bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_split
 
 std::string CApplication::ConstructResponse( const std::vector<std::string>& recv_splitted, const std::string& response_data )
 {
-	std::string constructed_response = "";
+	std::string constructed_response = response_data;
 
 	return constructed_response;
 }

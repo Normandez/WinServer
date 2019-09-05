@@ -8,6 +8,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <regex>
 
 #include <WinSock2.h>
 #include <WS2tcpip.h>
