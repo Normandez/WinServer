@@ -198,11 +198,36 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 		}
 
 		// Data processing
+		std::string response_data = "NOT_SET";
+		std::string buf_str(buf);
+		char delim = '\n';
+		std::string token = "";
 
-		// .....
+		std::stringstream buf_str_strm(buf_str);
+		std::vector<std::string> buf_str_lines;
+		while( std::getline( buf_str_strm, token, delim ) )
+		{
+			buf_str_lines.push_back(token);
+		}
+
+		if( IsPostRequest(buf_str_lines) )
+		{
+			if( IsJsonContentType(buf_str_lines) )
+			{
+				response_data = ConstructResponse( buf_str_lines, "" );
+			}
+			else
+			{
+				response_data = ConstructResponse( buf_str_lines, "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"" );
+			}
+		}
+		else
+		{
+			response_data = ConstructResponse( buf_str_lines, "\"{\\\"error\\\":\\\"Not POST request\\\"}\"" );
+		}
 
 		// Data sending
-		int send_res = ::send( accept_sock, buf, buf_size, 0 );
+		int send_res = ::send( accept_sock, response_data.c_str(), (int)response_data.size(), 0 );
 		if( send_res == SOCKET_ERROR )
 		{
 			std::cout << "Sending error: " << WSAGetLastError() << std::endl;
@@ -222,6 +247,44 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	}
 	
 	return 0;
+}
+
+bool CApplication::IsPostRequest( const std::vector<std::string>& recv_splitted )
+{
+	const std::string post_str = "POST";
+	std::string first_line = recv_splitted.at(0);
+	
+	std::transform( first_line.begin(), first_line.end(), first_line.begin(), ::toupper );
+
+	return ( first_line == post_str );
+}
+
+bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_splitted )
+{
+	const std::string header_content_type_str = "content-type:";
+	const std::string json_content_type_str = "application/json";
+
+	for( std::string line : recv_splitted )
+	{
+		std::transform( line.begin(), line.end(), line.begin(), ::tolower );
+		if( line.substr( 0, header_content_type_str.size() ) == header_content_type_str )
+		{
+			std::string content_type = line.substr( header_content_type_str.size() );
+			if( content_type == json_content_type_str || content_type == ( " " + json_content_type_str ) )
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+std::string CApplication::ConstructResponse( const std::vector<std::string>& recv_splitted, const std::string& response_data )
+{
+	std::string constructed_response = "";
+
+	return constructed_response;
 }
 
 size_t CApplication::GetWorkThreadNum() const

@@ -4,6 +4,11 @@
 #include <iostream>
 #include <vector>
 
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
+
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 
@@ -40,6 +45,10 @@ private:
 	bool m_is_thread_pool_init;
 
 	static DWORD WINAPI ProceedResponse( LPVOID param );
+
+	static bool IsPostRequest( const std::vector<std::string>& recv_splitted );
+	static bool IsJsonContentType( const std::vector<std::string>& recv_splitted );
+	static std::string ConstructResponse( const std::vector<std::string>& recv_splitted, const std::string& response_data );
 
 };
 
