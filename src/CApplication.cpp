@@ -149,6 +149,7 @@ void CApplication::StopAllThreads()
 DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 {
 	SOCKET accept_sock = INVALID_SOCKET;
+
 	while(true)
 	{
 		// Thread termination condition
@@ -160,6 +161,7 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 			break;
 		}
 
+		// Listen accepting
 		accept_sock = ::accept( ( (SOCKET*)param )[0], NULL, NULL );
 		if( accept_sock == INVALID_SOCKET && !s_termination_flag )
 		{
@@ -179,9 +181,44 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 		
 		char buf[DEFAULT_BUFSIZE];
 		int buf_size = DEFAULT_BUFSIZE;
-		::recv( accept_sock, buf, buf_size, 0 );
-		::send( accept_sock, buf, buf_size, 0 );
-		::shutdown( accept_sock, SD_SEND );
+
+		// Data receiving
+		int recv_res = ::recv( accept_sock, buf, buf_size, 0 );
+		if( recv_res == 0 )
+		{
+			::shutdown( accept_sock, SD_BOTH );
+			continue;
+		}
+		else if( recv_res == SOCKET_ERROR )
+		{
+			std::cout << "Receiving error: " << WSAGetLastError() << std::endl;
+			::shutdown( accept_sock, SD_BOTH );
+
+			continue;
+		}
+
+		// Data processing
+
+		// .....
+
+		// Data sending
+		int send_res = ::send( accept_sock, buf, buf_size, 0 );
+		if( send_res == SOCKET_ERROR )
+		{
+			std::cout << "Sending error: " << WSAGetLastError() << std::endl;
+			::shutdown( accept_sock, SD_BOTH );
+
+			continue;
+		}
+
+		// Disconnect
+		int shutdown_res = ::shutdown( accept_sock, SD_SEND );
+		if( shutdown_res == SOCKET_ERROR )
+		{
+			std::cout << "Disconnect error: " << WSAGetLastError() << std::endl;
+
+			continue;
+		}
 	}
 	
 	return 0;
