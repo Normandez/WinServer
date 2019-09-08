@@ -149,6 +149,7 @@ void CApplication::StopAllThreads()
 DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 {
 	SOCKET accept_sock = INVALID_SOCKET;
+	CHttpParser http_parser;
 
 	while(true)
 	{
@@ -199,43 +200,34 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 
 		// Data processing
 		std::string response_data = "NOT_SET";
-		/*std::string buf_str(buf);
-		char delim = '\n';
-		std::string token = "";
+		http_parser.LoadRequest(buf);
 
-		std::stringstream buf_str_strm(buf_str);
-		std::vector<std::string> buf_str_lines;
-		while( std::getline( buf_str_strm, token, delim ) )
+		if( http_parser.IsPostRequest() )
 		{
-			buf_str_lines.push_back(token);
-		}*/
-
-		if( IsPostRequest(buf_str_lines) )
-		{
-			if( IsJsonContentType(buf_str_lines) )
+			if( http_parser.IsJsonContentType() )
 			{
 				std::regex data_regex("\"data\": ?\"(.*)\"");
 				std::smatch data_match;
-				if( std::regex_search( buf_str_lines.back(), data_match, data_regex ) )
+				if( std::regex_search( http_parser.ReadRequestLines().back(), data_match, data_regex ) )
 				{
 					std::string data = data_match[1].str();
 					std::reverse( data.begin(), data.end() );
 
-					response_data = ConstructResponse( "\"{\\\"data\\\":\\\"" + data + "\\\"}\"", true );
+					response_data = http_parser.ConstructResponse( "\"{\\\"data\\\":\\\"" + data + "\\\"}\"", true );
 				}
 				else
 				{
-					response_data = ConstructResponse( "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"", false );
+					response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"", false );
 				}
 			}
 			else
 			{
-				response_data = ConstructResponse( "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"", false );
+				response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"", false );
 			}
 		}
 		else
 		{
-			response_data = ConstructResponse( "\"{\\\"error\\\":\\\"Not POST request\\\"}\"", false );
+			response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not POST request\\\"}\"", false );
 		}
 
 		// Data sending
@@ -260,56 +252,6 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	
 	return 0;
 }
-
-/*bool CApplication::IsPostRequest( const std::vector<std::string>& recv_splitted )
-{
-	const std::string post_str = "POST";
-	std::string first_line = recv_splitted.at(0);
-	
-	std::transform( first_line.begin(), first_line.end(), first_line.begin(), ::toupper );
-
-	return ( first_line.substr( 0, post_str.size() ) == post_str );
-}*/
-
-/*bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_splitted )
-{
-	const std::string header_content_type_str = "content-type:";
-	const std::string json_content_type_str = "application/json";
-
-	for( std::string line : recv_splitted )
-	{
-		std::transform( line.begin(), line.end(), line.begin(), ::tolower );
-		if( line.substr( 0, header_content_type_str.size() ) == header_content_type_str )
-		{
-			std::string content_type = line.substr( header_content_type_str.size() );
-			if( content_type.back() == '\r' )
-			{
-				content_type.resize( content_type.size() - 1 );
-			}
-			if( content_type == json_content_type_str || content_type == ( " " + json_content_type_str ) )
-			{
-				return true;
-			}
-		}
-	}
-
-	return false;
-}*/
-
-/*std::string CApplication::ConstructResponse( const std::string& response_data, bool is_success )
-{
-	std::string constructed_response = "";
-
-	if(is_success) constructed_response += "HTTP /1.1 200 OK\n";
-	else constructed_response += "HTTP /1.1 400 Bad Request\n";
-	constructed_response += "Content-Type: application/json\n";
-	constructed_response += "Content-Length: " + std::to_string( (int)response_data.size() );
-	constructed_response += "\n";
-	constructed_response += "Server: WinServer\n\n";
-	constructed_response += response_data;
-
-	return constructed_response;
-}*/
 
 size_t CApplication::GetWorkThreadNum() const
 {

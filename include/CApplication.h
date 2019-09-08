@@ -2,21 +2,15 @@
 #define CAPPLICATION_H
 
 #include <iostream>
-#include <vector>
 
-#include <string>
-#include <sstream>
-#include <algorithm>
 #include <iterator>
 #include <regex>
 
+#pragma comment(lib, "Ws2_32.lib")
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 
-#pragma comment(lib, "Ws2_32.lib")
-
-#define DEFAULT_PORT "27015"
-#define DEFAULT_BUF_LENGTH 512
+#include "CHttpParser.h"
 
 class CApplication
 {
@@ -46,10 +40,6 @@ private:
 	bool m_is_thread_pool_init;
 
 	static DWORD WINAPI ProceedResponse( LPVOID param );
-
-	//static bool IsPostRequest( const std::vector<std::string>& recv_splitted );
-	//static bool IsJsonContentType( const std::vector<std::string>& recv_splitted );
-	//static std::string ConstructResponse( const std::string& response_data, bool is_success );
 
 };
 
