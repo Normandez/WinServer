@@ -37,9 +37,9 @@ int main( int argc, char** argv )
 			}
 		}
 	}
-	catch( const std::exception& rt_ex )
+	catch( const std::exception& ex )
 	{
-		std::cout << "Common exception handled: " << rt_ex.what() << std::endl;
+		std::cout << "Common exception handled: " << ex.what() << std::endl;
 
 		std::getchar();
 		return 1;

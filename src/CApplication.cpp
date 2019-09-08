@@ -146,8 +146,30 @@ void CApplication::StopAllThreads()
 	}
 }
 
+size_t CApplication::GetWorkThreadNum() const
+{
+	return s_termination_flag ? 0 : m_thread_pool.size();
+}
+
+void CApplication::PrintWorkThreads() const
+{
+	::EnterCriticalSection(&critical_sec);
+	if( m_thread_pool.empty() || s_termination_flag )
+	{
+		std::cout << "ThreadPool is empty" << std::endl;
+		return;
+	}
+	for( size_t it = 0; it < m_thread_pool.size(); it++ )
+	{
+		std::cout << "WorkThread #" << it << ", HANDLE = " << m_thread_pool.at(it).first << ", ID = " << m_thread_pool.at(it).second << std::endl;
+	}
+	::LeaveCriticalSection(&critical_sec);
+}
+
 DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 {
+	char buf[DEFAULT_BUFSIZE];
+	int buf_size = DEFAULT_BUFSIZE;
 	SOCKET accept_sock = INVALID_SOCKET;
 	CHttpParser http_parser;
 
@@ -179,9 +201,6 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 
 			break;
 		}
-		
-		char buf[DEFAULT_BUFSIZE];
-		int buf_size = DEFAULT_BUFSIZE;
 
 		// Data receiving
 		int recv_res = ::recv( accept_sock, buf, buf_size, 0 );
@@ -200,34 +219,36 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 
 		// Data processing
 		std::string response_data = "NOT_SET";
-		http_parser.LoadRequest(buf);
-
-		if( http_parser.IsPostRequest() )
 		{
-			if( http_parser.IsJsonContentType() )
-			{
-				std::regex data_regex("\"data\": ?\"(.*)\"");
-				std::smatch data_match;
-				if( std::regex_search( http_parser.ReadRequestLines().back(), data_match, data_regex ) )
-				{
-					std::string data = data_match[1].str();
-					std::reverse( data.begin(), data.end() );
+			http_parser.LoadRequest(buf);
 
-					response_data = http_parser.ConstructResponse( "\"{\\\"data\\\":\\\"" + data + "\\\"}\"", true );
+			if( http_parser.IsPostRequest() )
+			{
+				if( http_parser.IsJsonContentType() )
+				{
+					std::regex data_regex("\"data\": ?\"(.*)\"");
+					std::smatch data_match;
+					if( std::regex_search( http_parser.ReadRequestLines().back(), data_match, data_regex ) )
+					{
+						std::string data = data_match[1].str();
+						std::reverse( data.begin(), data.end() );
+
+						response_data = http_parser.ConstructResponse( "\"{\\\"data\\\":\\\"" + data + "\\\"}\"", true );
+					}
+					else
+					{
+						response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"", false );
+					}
 				}
 				else
 				{
-					response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"", false );
+					response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"", false );
 				}
 			}
 			else
 			{
-				response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"", false );
+				response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not POST request\\\"}\"", false );
 			}
-		}
-		else
-		{
-			response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not POST request\\\"}\"", false );
 		}
 
 		// Data sending
@@ -251,24 +272,4 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	}
 	
 	return 0;
-}
-
-size_t CApplication::GetWorkThreadNum() const
-{
-	return s_termination_flag ? 0 : m_thread_pool.size();
-}
-
-void CApplication::PrintWorkThreads() const
-{
-	::EnterCriticalSection(&critical_sec);
-	if( m_thread_pool.empty() || s_termination_flag )
-	{
-		std::cout << "ThreadPool is empty" << std::endl;
-		return;
-	}
-	for( size_t it = 0; it < m_thread_pool.size(); it++ )
-	{
-		std::cout << "WorkThread #" << it << ", HANDLE = " << m_thread_pool.at(it).first << ", ID = " << m_thread_pool.at(it).second << std::endl;
-	}
-	::LeaveCriticalSection(&critical_sec);
 }
