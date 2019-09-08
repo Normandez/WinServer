@@ -20,6 +20,7 @@ public:
 	void operator=( CHttpParser&& other ) = delete;
 
 	void LoadRequest( const char* request_buf );
+	const std::vector<std::string>& ReadRequestLines() const;
 
 	bool IsPostRequest() const;
 	bool IsJsonContentType() const;

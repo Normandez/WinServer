@@ -24,6 +24,11 @@ void CHttpParser::LoadRequest( const char* request_buf )
 	}
 }
 
+const std::vector<std::string>& CHttpParser::ReadRequestLines() const
+{
+	return m_request_lines;
+}
+
 bool CHttpParser::IsPostRequest() const
 {
 	const std::string post_str = "POST";
