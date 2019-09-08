@@ -10,6 +10,8 @@ INCLUDEPATH += $${INCLUDE}
 
 SOURCES += $${SRC}/main.cpp
 
+HEADERS += $${INCLUDE}/SInputParams.h
+
 HEADERS += $${INCLUDE}/CApplication.h
 SOURCES += $${SRC}/CApplication.cpp
 
