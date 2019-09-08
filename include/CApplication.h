@@ -47,9 +47,9 @@ private:
 
 	static DWORD WINAPI ProceedResponse( LPVOID param );
 
-	static bool IsPostRequest( const std::vector<std::string>& recv_splitted );
-	static bool IsJsonContentType( const std::vector<std::string>& recv_splitted );
-	static std::string ConstructResponse( const std::string& response_data, bool is_success );
+	//static bool IsPostRequest( const std::vector<std::string>& recv_splitted );
+	//static bool IsJsonContentType( const std::vector<std::string>& recv_splitted );
+	//static std::string ConstructResponse( const std::string& response_data, bool is_success );
 
 };
 

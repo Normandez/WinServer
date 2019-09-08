@@ -5,6 +5,8 @@
 #include <sstream>
 #include <vector>
 
+#include <algorithm>
+
 class CHttpParser
 {
 public:
@@ -18,6 +20,11 @@ public:
 	void operator=( CHttpParser&& other ) = delete;
 
 	void LoadRequest( const char* request_buf );
+
+	bool IsPostRequest() const;
+	bool IsJsonContentType() const;
+
+	std::string ConstructResponse( const std::string& response_data, bool is_success ) const;
 
 private:
 	std::vector<std::string> m_request_lines;

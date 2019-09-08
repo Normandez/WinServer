@@ -199,7 +199,7 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 
 		// Data processing
 		std::string response_data = "NOT_SET";
-		std::string buf_str(buf);
+		/*std::string buf_str(buf);
 		char delim = '\n';
 		std::string token = "";
 
@@ -208,7 +208,7 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 		while( std::getline( buf_str_strm, token, delim ) )
 		{
 			buf_str_lines.push_back(token);
-		}
+		}*/
 
 		if( IsPostRequest(buf_str_lines) )
 		{
@@ -261,7 +261,7 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	return 0;
 }
 
-bool CApplication::IsPostRequest( const std::vector<std::string>& recv_splitted )
+/*bool CApplication::IsPostRequest( const std::vector<std::string>& recv_splitted )
 {
 	const std::string post_str = "POST";
 	std::string first_line = recv_splitted.at(0);
@@ -269,9 +269,9 @@ bool CApplication::IsPostRequest( const std::vector<std::string>& recv_splitted 
 	std::transform( first_line.begin(), first_line.end(), first_line.begin(), ::toupper );
 
 	return ( first_line.substr( 0, post_str.size() ) == post_str );
-}
+}*/
 
-bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_splitted )
+/*bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_splitted )
 {
 	const std::string header_content_type_str = "content-type:";
 	const std::string json_content_type_str = "application/json";
@@ -294,9 +294,9 @@ bool CApplication::IsJsonContentType( const std::vector<std::string>& recv_split
 	}
 
 	return false;
-}
+}*/
 
-std::string CApplication::ConstructResponse( const std::string& response_data, bool is_success )
+/*std::string CApplication::ConstructResponse( const std::string& response_data, bool is_success )
 {
 	std::string constructed_response = "";
 
@@ -309,7 +309,7 @@ std::string CApplication::ConstructResponse( const std::string& response_data, b
 	constructed_response += response_data;
 
 	return constructed_response;
-}
+}*/
 
 size_t CApplication::GetWorkThreadNum() const
 {
