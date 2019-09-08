@@ -1,7 +1,7 @@
 #include "CApplication.h"
 
 #define DEFAULT_PORT "27015"
-#define DEFAULT_BUFSIZE 1024
+#define DEFAULT_BUFSIZE 8192
 
 namespace
 {
