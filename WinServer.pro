@@ -12,3 +12,6 @@ SOURCES += $${SRC}/main.cpp
 
 HEADERS += $${INCLUDE}/CApplication.h
 SOURCES += $${SRC}/CApplication.cpp
+
+HEADERS += $${INCLUDE}/CHttpParser.h
+SOURCES += $${SRC}/CHttpParser.cpp

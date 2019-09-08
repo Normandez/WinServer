@@ -17,7 +17,7 @@ CApplication::CApplication()
 	  m_is_thread_pool_init(false)
 {
 	::InitializeCriticalSection(&critical_sec);
-	m_thread_pool.reserve(15);
+	m_thread_pool.reserve(s_max_thread_pool_size);
 
 	// WinSock2 init
 	int wsa_init_res = ::WSAStartup( MAKEWORD(2,0), &m_wsa_data );
