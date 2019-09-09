@@ -11,11 +11,12 @@
 #include <WS2tcpip.h>
 
 #include "CHttpParser.h"
+#include "CLogger.h"
 
 class CApplication
 {
 public:
-	explicit CApplication( int num_of_threads, const std::string& listen_port );
+	explicit CApplication( int num_of_threads, const std::string& listen_port, CLogger* logger );
 	CApplication( const CApplication& other ) = delete;
 	CApplication( CApplication&& other ) = delete;
 	~CApplication();
@@ -30,6 +31,8 @@ public:
 	void PrintWorkThreads() const;
 
 private:
+	CLogger* m_logger;
+
 	std::vector<std::pair<HANDLE, DWORD>> m_thread_pool;
 	int m_num_of_threads;
 
