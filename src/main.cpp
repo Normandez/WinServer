@@ -1,3 +1,4 @@
+#include "SInputParams.h"
 #include "CApplication.h"
 
 static const char* s_main_menu = "CONTROL PANEL:\n\t0 - exit\n\t1 - print work threads num\n\t2 - print work threads\n\t3 - stop all work threads\n\n";
@@ -6,7 +7,17 @@ int main( int argc, char** argv )
 {
 	try
 	{
-		CApplication app;
+		// Input params parsing
+		SInputParams input_params( argc, argv );
+		if(!input_params.m_is_valid)
+		{
+			std::cout << "Bad input params.\n" << input_params.m_error_reason.c_str() << std::endl;
+		
+			std::getchar();
+			return 1;
+		}
+
+		CApplication app( input_params.m_threads_num, input_params.m_port );
 		app.Listen();
 		
 		short res = 255;
@@ -42,7 +53,7 @@ int main( int argc, char** argv )
 		std::cout << "Common exception handled: " << ex.what() << std::endl;
 
 		std::getchar();
-		return 1;
+		return 2;
 	}
 
 	std::getchar();

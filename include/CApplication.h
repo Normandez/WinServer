@@ -15,7 +15,7 @@
 class CApplication
 {
 public:
-	explicit CApplication();
+	explicit CApplication( int num_of_threads, const std::string& listen_port );
 	CApplication( const CApplication& other ) = delete;
 	CApplication( CApplication&& other ) = delete;
 	~CApplication();

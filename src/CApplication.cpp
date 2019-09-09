@@ -10,14 +10,15 @@ namespace
 	static bool s_termination_flag = false;
 }
 
-CApplication::CApplication()
+CApplication::CApplication( int num_of_threads, const std::string& listen_port )
 	: m_listen_sock(INVALID_SOCKET),
 	  m_is_wsa_init(false),
 	  m_is_listen_sock_init(false),
 	  m_is_thread_pool_init(false)
 {
 	::InitializeCriticalSection(&critical_sec);
-	m_thread_pool.reserve(s_max_thread_pool_size);
+	( num_of_threads == 0 ) ? m_thread_pool.reserve(s_max_thread_pool_size) : m_thread_pool.reserve(num_of_threads);
+	std::string port = ( listen_port.empty() ) ? DEFAULT_PORT : listen_port;
 
 	// WinSock2 init
 	int wsa_init_res = ::WSAStartup( MAKEWORD(2,0), &m_wsa_data );
@@ -39,7 +40,7 @@ CApplication::CApplication()
 	addrinfo_params.ai_socktype = SOCK_STREAM;
 	addrinfo_params.ai_protocol = IPPROTO_TCP;
 	addrinfo_params.ai_flags = AI_PASSIVE;
-	int getaddrinfo_res = getaddrinfo( NULL, DEFAULT_PORT, &addrinfo_params, &addrinfo_res );
+	int getaddrinfo_res = getaddrinfo( NULL, port.c_str(), &addrinfo_params, &addrinfo_res );
 	if(getaddrinfo_res)
 	{
 		std::cout << "ADDRINFO getting failed with code: " << getaddrinfo_res << std::endl;
