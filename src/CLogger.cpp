@@ -19,6 +19,12 @@ CLogger::~CLogger()
 
 void CLogger::MakeLog( const std::string& log_line )
 {
-	std::cout << "> " << log_line.c_str() << std::endl;
+	std::cout << "> " << log_line << std::endl;
 	if(m_enable_file_logging) m_log_file_strm << "> " << log_line.c_str() << std::endl;
+}
+
+void CLogger::MakeErrorLog( const std::string& err_lor_line )
+{
+	std::cerr << "> ERROR: " << err_lor_line << std::endl;
+	if(m_enable_file_logging) m_log_file_strm << "> ERROR: " << err_lor_line << std::endl;
 }

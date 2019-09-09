@@ -18,6 +18,7 @@ public:
 	void operator=( CLogger&& other ) = delete;
 
 	void MakeLog( const std::string& log_line );
+	void MakeErrorLog( const std::string& err_lor_line );
 	
 private:
 	std::ofstream m_log_file_strm;
