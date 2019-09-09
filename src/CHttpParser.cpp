@@ -32,7 +32,15 @@ const std::vector<std::string>& CHttpParser::ReadRequestLines() const
 bool CHttpParser::IsPostRequest() const
 {
 	const std::string post_str = "POST";
-	std::string first_line = m_request_lines.at(0);
+	std::string first_line = "";
+	try
+	{
+		first_line = m_request_lines.at(0);
+	}
+	catch( const std::out_of_range& out_of_range_ex )
+	{
+		return false;
+	}
 	
 	std::transform( first_line.begin(), first_line.end(), first_line.begin(), ::toupper );
 

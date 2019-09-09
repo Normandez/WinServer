@@ -16,7 +16,7 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port )
 	  m_is_thread_pool_init(false)
 {
 	::InitializeCriticalSection(&critical_sec);
-	if ( num_of_threads == 0 )
+	if( num_of_threads == 0 )
 	{
 		SYSTEM_INFO sys_info;
 		::GetSystemInfo(&sys_info);
@@ -159,7 +159,7 @@ void CApplication::StopAllThreads()
 	}
 }
 
-size_t CApplication::GetWorkThreadNum() const
+size_t CApplication::GetWorkThreadsNum() const
 {
 	return s_termination_flag ? 0 : m_thread_pool.size();
 }
@@ -186,102 +186,138 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	SOCKET accept_sock = INVALID_SOCKET;
 	CHttpParser http_parser;
 
-	while(true)
+	try
 	{
-		// Thread termination condition
-		if(s_termination_flag)
+		while(true)
 		{
-			::shutdown( accept_sock, SD_SEND );
-			::closesocket(accept_sock);
-
-			break;
-		}
-
-		// Listen accepting
-		accept_sock = ::accept( ( (SOCKET*)param )[0], NULL, NULL );
-		if( accept_sock == INVALID_SOCKET && !s_termination_flag )
-		{
-			::EnterCriticalSection(&critical_sec);
-			std::cout << "Invalid listen_sock. ERROR: " << ::WSAGetLastError() << std::endl;
-			::LeaveCriticalSection(&critical_sec);
-			::closesocket(accept_sock);
-			return 1;
-		}
-		else if(s_termination_flag)
-		{
-			::shutdown( accept_sock, SD_SEND );
-			::closesocket(accept_sock);
-
-			break;
-		}
-
-		// Data receiving
-		int recv_res = ::recv( accept_sock, buf, buf_size, 0 );
-		if( recv_res == 0 )
-		{
-			::shutdown( accept_sock, SD_BOTH );
-			continue;
-		}
-		else if( recv_res == SOCKET_ERROR )
-		{
-			std::cout << "Receiving error: " << WSAGetLastError() << std::endl;
-			::shutdown( accept_sock, SD_BOTH );
-
-			continue;
-		}
-
-		// Data processing
-		std::string response_data = "NOT_SET";
-		{
-			http_parser.LoadRequest(buf);
-
-			if( http_parser.IsPostRequest() )
+			// Thread termination condition
+			if(s_termination_flag)
 			{
-				if( http_parser.IsJsonContentType() )
-				{
-					std::regex data_regex("\"data\": ?\"(.*)\"");
-					std::smatch data_match;
-					if( std::regex_search( http_parser.ReadRequestLines().back(), data_match, data_regex ) )
-					{
-						std::string data = data_match[1].str();
-						std::reverse( data.begin(), data.end() );
+				::shutdown( accept_sock, SD_SEND );
+				::closesocket(accept_sock);
 
-						response_data = http_parser.ConstructResponse( "\"{\\\"data\\\":\\\"" + data + "\\\"}\"", true );
+				break;
+			}
+
+			// Listen accepting
+			accept_sock = ::accept( ( (SOCKET*)param )[0], NULL, NULL );
+			if( accept_sock == INVALID_SOCKET && !s_termination_flag )
+			{
+				::EnterCriticalSection(&critical_sec);
+				std::cout << "Invalid listen_sock. ERROR: " << ::WSAGetLastError() << std::endl;
+				::LeaveCriticalSection(&critical_sec);
+				::closesocket(accept_sock);
+				return 1;
+			}
+			else if(s_termination_flag)
+			{
+				::shutdown( accept_sock, SD_SEND );
+				::closesocket(accept_sock);
+
+				break;
+			}
+
+			// Data receiving
+			int recv_res = ::recv( accept_sock, buf, buf_size, 0 );
+			if( recv_res == 0 )
+			{
+				::shutdown( accept_sock, SD_BOTH );
+				continue;
+			}
+			else if( recv_res == SOCKET_ERROR )
+			{
+				std::cout << "Receiving error: " << WSAGetLastError() << std::endl;
+				::shutdown( accept_sock, SD_BOTH );
+
+				continue;
+			}
+
+			// Data processing
+			std::string response_data = "NOT_SET";
+			{
+				http_parser.LoadRequest(buf);
+
+				if( http_parser.IsPostRequest() )
+				{
+					if( http_parser.IsJsonContentType() )
+					{
+						std::regex data_regex("\"data\": ?\"(.*)\"");
+						std::smatch data_match;
+						if( std::regex_search( http_parser.ReadRequestLines().back(), data_match, data_regex ) )
+						{
+							std::string data = data_match[1].str();
+							std::reverse( data.begin(), data.end() );
+
+							response_data = http_parser.ConstructResponse( "\"{\\\"data\\\":\\\"" + data + "\\\"}\"", true );
+						}
+						else
+						{
+							response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"", false );
+						}
 					}
 					else
 					{
-						response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"", false );
+						response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"", false );
 					}
 				}
 				else
 				{
-					response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"", false );
+					response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not POST request\\\"}\"", false );
 				}
 			}
-			else
+
+			// Data sending
+			int send_res = ::send( accept_sock, response_data.c_str(), (int)response_data.size(), 0 );
+			if( send_res == SOCKET_ERROR )
 			{
-				response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not POST request\\\"}\"", false );
+				std::cout << "Sending error: " << WSAGetLastError() << std::endl;
+				::shutdown( accept_sock, SD_BOTH );
+
+				continue;
+			}
+
+			// Disconnect
+			int shutdown_res = ::shutdown( accept_sock, SD_SEND );
+			if( shutdown_res == SOCKET_ERROR )
+			{
+				std::cout << "Disconnect error: " << WSAGetLastError() << std::endl;
+
+				continue;
 			}
 		}
+	}
+	catch( const std::runtime_error& rt_ex )
+	{
+		std::cout << "runtime_error exception handled in WorkThread with ID = " << ::GetCurrentThreadId() << " :" << rt_ex.what() << std::endl;
 
-		// Data sending
-		int send_res = ::send( accept_sock, response_data.c_str(), (int)response_data.size(), 0 );
-		if( send_res == SOCKET_ERROR )
-		{
-			std::cout << "Sending error: " << WSAGetLastError() << std::endl;
-			::shutdown( accept_sock, SD_BOTH );
+		::shutdown( accept_sock, SD_SEND );
+		::closesocket(accept_sock);
 
-			continue;
-		}
+		return 1;
+	}
+	catch( const std::logic_error& lg_ex )
+	{
+		std::cout << "logic_error exception handled in WorkThread with ID = " << ::GetCurrentThreadId() << " :" << lg_ex.what() << std::endl;
 
-		// Disconnect
-		int shutdown_res = ::shutdown( accept_sock, SD_SEND );
-		if( shutdown_res == SOCKET_ERROR )
-		{
-			std::cout << "Disconnect error: " << WSAGetLastError() << std::endl;
+		::shutdown( accept_sock, SD_SEND );
+		::closesocket(accept_sock);
 
-			continue;
-		}
+		return 2;
+	}
+	catch( const std::exception& ex )
+	{
+		std::cout << "Common exception handled in WorkThread with ID = " << ::GetCurrentThreadId() << " :" << ex.what() << std::endl;
+
+		::shutdown( accept_sock, SD_SEND );
+		::closesocket(accept_sock);
+
+		return 3;
+	}
+	catch(...)
+	{
+		std::cout << "Unknown exception handled in WorkThread with ID = " << ::GetCurrentThreadId() << " :" << std::endl;
+		
+		return 4;
 	}
 	
 	return 0;

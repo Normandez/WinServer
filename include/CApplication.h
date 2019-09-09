@@ -26,7 +26,7 @@ public:
 	void Listen();
 	void StopAllThreads();
 
-	size_t GetWorkThreadNum() const;
+	size_t GetWorkThreadsNum() const;
 	void PrintWorkThreads() const;
 
 private:
