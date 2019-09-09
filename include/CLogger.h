@@ -22,6 +22,8 @@ public:
 private:
 	std::ofstream m_log_file_strm;
 
+	bool m_enable_file_logging;
+
 };
 
 #endif //CLOGGER_H
