@@ -5,7 +5,6 @@
 
 namespace
 {
-	static const size_t s_max_thread_pool_size = 15;
 	static CRITICAL_SECTION critical_sec;
 	static bool s_termination_flag = false;
 }
@@ -17,7 +16,20 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port )
 	  m_is_thread_pool_init(false)
 {
 	::InitializeCriticalSection(&critical_sec);
-	( num_of_threads == 0 ) ? m_thread_pool.reserve(s_max_thread_pool_size) : m_thread_pool.reserve(num_of_threads);
+	if ( num_of_threads == 0 )
+	{
+		SYSTEM_INFO sys_info;
+		::GetSystemInfo(&sys_info);
+		m_num_of_threads = (int)sys_info.dwNumberOfProcessors * 2;
+
+		m_thread_pool.reserve(m_num_of_threads);
+	}
+	else
+	{
+		m_num_of_threads = num_of_threads;
+
+		m_thread_pool.reserve(m_num_of_threads);
+	}
 	std::string port = ( listen_port.empty() ) ? DEFAULT_PORT : listen_port;
 
 	// WinSock2 init
@@ -104,7 +116,7 @@ void CApplication::Listen()
 	}
 
 	// Init thread pool
-	for( size_t count = 0; count < s_max_thread_pool_size; count++ )
+	for( size_t count = 0; count < m_num_of_threads; count++ )
 	{
 		std::pair<HANDLE, DWORD> new_pair;
 		new_pair.first = ::CreateThread( NULL, 0, &CApplication::ProceedResponse, &m_listen_sock, 0, &new_pair.second );

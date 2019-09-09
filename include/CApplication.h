@@ -31,6 +31,7 @@ public:
 
 private:
 	std::vector<std::pair<HANDLE, DWORD>> m_thread_pool;
+	int m_num_of_threads;
 
 	WSADATA m_wsa_data;
 	SOCKET m_listen_sock;
