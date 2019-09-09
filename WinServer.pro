@@ -12,6 +12,9 @@ SOURCES += $${SRC}/main.cpp
 
 HEADERS += $${INCLUDE}/SInputParams.h
 
+HEADERS += $${INCLUDE}/CLogger.h
+SOURCES += $${SRC}/CLogger.cpp
+
 HEADERS += $${INCLUDE}/CApplication.h
 SOURCES += $${SRC}/CApplication.cpp
 
