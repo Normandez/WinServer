@@ -20,7 +20,7 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port )
 	{
 		SYSTEM_INFO sys_info;
 		::GetSystemInfo(&sys_info);
-		m_num_of_threads = (int)sys_info.dwNumberOfProcessors * 2;
+		m_num_of_threads = (int)sys_info.dwNumberOfProcessors * 2 - 1;
 
 		m_thread_pool.reserve(m_num_of_threads);
 	}
