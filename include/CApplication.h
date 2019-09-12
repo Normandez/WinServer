@@ -44,6 +44,12 @@ private:
 	bool m_is_listen_sock_init;
 	bool m_is_thread_pool_init;
 
+	struct SThreadArgs
+	{
+		SOCKET* listen_sock = nullptr;
+		CLogger* logger = nullptr;
+		CRITICAL_SECTION* log_critical_sec = nullptr;
+	} m_thread_args;
 	static DWORD WINAPI ProceedResponse( LPVOID param );
 
 };

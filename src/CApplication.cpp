@@ -37,7 +37,7 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port, 
 	int wsa_init_res = ::WSAStartup( MAKEWORD(2,0), &m_wsa_data );
 	if(wsa_init_res)
 	{
-		std::cout << "WSADATA init failed with code: " << wsa_init_res << std::endl;
+		m_logger->MakeErrorLog( "WSADATA init failed with code: " + std::to_string(wsa_init_res) );
 		return;
 	}
 	else
@@ -56,7 +56,7 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port, 
 	int getaddrinfo_res = getaddrinfo( NULL, port.c_str(), &addrinfo_params, &addrinfo_res );
 	if(getaddrinfo_res)
 	{
-		std::cout << "ADDRINFO getting failed with code: " << getaddrinfo_res << std::endl;
+		m_logger->MakeErrorLog( "ADDRINFO getting failed with code: " + std::to_string(getaddrinfo_res) );
 		return;
 	}
 
@@ -64,7 +64,7 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port, 
 	m_listen_sock = socket( addrinfo_res->ai_family, addrinfo_res->ai_socktype, addrinfo_res->ai_protocol );
 	if( m_listen_sock == INVALID_SOCKET )
 	{
-		std::cout << "Listen socket init failed with error: " << ::WSAGetLastError() << std::endl;
+		m_logger->MakeErrorLog( "Listen socket init failed with error: " + std::to_string( ::WSAGetLastError() ) );
 		::freeaddrinfo(addrinfo_res);
 		return;
 	}
@@ -77,7 +77,7 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port, 
 	int bind_res = ::bind( m_listen_sock, addrinfo_res->ai_addr, (int)addrinfo_res->ai_addrlen );
 	if( bind_res == SOCKET_ERROR )
 	{
-		std::cout << "Listen socket binding failed with error: " << ::WSAGetLastError() << std::endl;
+		m_logger->MakeErrorLog( "Listen socket binding failed with error: " + std::to_string( ::WSAGetLastError() ) );
 		::freeaddrinfo(addrinfo_res);
 		return;
 	}
@@ -112,15 +112,20 @@ void CApplication::Listen()
 	int listen_res = ::listen( m_listen_sock, SOMAXCONN );
 	if( listen_res == SOCKET_ERROR )
 	{
-		std::cout << "Listen socket listening failed with error: " << WSAGetLastError() << std::endl;
+		m_logger->MakeErrorLog( "Listen socket listening failed with error: " + std::to_string( ::WSAGetLastError() ) );
 		return;
 	}
+
+	// Compress thread args into struct
+	m_thread_args.listen_sock = &m_listen_sock;
+	m_thread_args.logger = m_logger;
+	m_thread_args.log_critical_sec = m_log_critical_sec;
 
 	// Init thread pool
 	for( size_t count = 0; count < m_num_of_threads; count++ )
 	{
 		std::pair<HANDLE, DWORD> new_pair;
-		new_pair.first = ::CreateThread( NULL, 0, &CApplication::ProceedResponse, &m_listen_sock, 0, &new_pair.second );
+		new_pair.first = ::CreateThread( NULL, 0, &CApplication::ProceedResponse, &m_thread_args, 0, &new_pair.second );
 		m_thread_pool.push_back(new_pair);
 	}
 	m_is_thread_pool_init = true;
@@ -167,21 +172,37 @@ void CApplication::PrintWorkThreads() const
 {
 	if( m_thread_pool.empty() || s_termination_flag )
 	{
-		std::cout << "ThreadPool is empty" << std::endl;
+		::EnterCriticalSection(m_log_critical_sec);
+		m_logger->MakeLog("ThreadPool is empty");
+		::LeaveCriticalSection(m_log_critical_sec);
+
 		return;
 	}
+
+	::EnterCriticalSection(m_log_critical_sec);
 	for( size_t it = 0; it < m_thread_pool.size(); it++ )
 	{
-		std::cout << "WorkThread #" << it << ", HANDLE = " << m_thread_pool.at(it).first << ", ID = " << m_thread_pool.at(it).second << std::endl;
+		std::string log_line = "WorkThread #" 
+			+ std::to_string(it)
+			+ ", ID = " 
+			+ std::to_string( m_thread_pool.at(it).second );
+
+		m_logger->MakeLog(log_line);
 	}
+	::LeaveCriticalSection(m_log_critical_sec);
 }
 
 DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 {
+	SThreadArgs* thread_args = (SThreadArgs*)param;
+
 	char buf[DEFAULT_BUFSIZE];
 	int buf_size = DEFAULT_BUFSIZE;
 	SOCKET accept_sock = INVALID_SOCKET;
 	CHttpParser http_parser;
+
+	std::string str_wsa_last_error = "";
+	const std::string str_current_thread_id = std::to_string( ::GetCurrentThreadId() );
 
 	try
 	{
@@ -197,10 +218,15 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 			}
 
 			// Listen accepting
-			accept_sock = ::accept( ( (SOCKET*)param )[0], NULL, NULL );
+			accept_sock = ::accept( ( (SOCKET*)thread_args->listen_sock )[0], NULL, NULL );
 			if( accept_sock == INVALID_SOCKET && !s_termination_flag )
 			{
-				std::cout << "Invalid listen_sock. ERROR: " << ::WSAGetLastError() << std::endl;
+				str_wsa_last_error = std::to_string( ::WSAGetLastError() );
+
+				::EnterCriticalSection(thread_args->log_critical_sec);
+				thread_args->logger->MakeErrorLog( "WorkThread ID = " + str_current_thread_id + ": Invalid listen_sock: " + str_wsa_last_error );
+				::LeaveCriticalSection(thread_args->log_critical_sec);
+				
 				::closesocket(accept_sock);
 				return 1;
 			}
@@ -221,7 +247,12 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 			}
 			else if( recv_res == SOCKET_ERROR )
 			{
-				std::cout << "Receiving error: " << WSAGetLastError() << std::endl;
+				str_wsa_last_error = std::to_string( ::WSAGetLastError() );
+
+				::EnterCriticalSection(thread_args->log_critical_sec);
+				thread_args->logger->MakeErrorLog( "WorkThread ID = " + str_current_thread_id + ": Receiving error: " + str_wsa_last_error );
+				::LeaveCriticalSection(thread_args->log_critical_sec);
+
 				::shutdown( accept_sock, SD_BOTH );
 
 				continue;
@@ -265,7 +296,12 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 			int send_res = ::send( accept_sock, response_data.c_str(), (int)response_data.size(), 0 );
 			if( send_res == SOCKET_ERROR )
 			{
-				std::cout << "Sending error: " << WSAGetLastError() << std::endl;
+				str_wsa_last_error = std::to_string( ::WSAGetLastError() );
+
+				::EnterCriticalSection(thread_args->log_critical_sec);
+				thread_args->logger->MakeErrorLog( "WorkThread ID = " + str_current_thread_id + ": Sending error: " + str_wsa_last_error );
+				::LeaveCriticalSection(thread_args->log_critical_sec);
+
 				::shutdown( accept_sock, SD_BOTH );
 
 				continue;
@@ -275,7 +311,11 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 			int shutdown_res = ::shutdown( accept_sock, SD_SEND );
 			if( shutdown_res == SOCKET_ERROR )
 			{
-				std::cout << "Disconnect error: " << WSAGetLastError() << std::endl;
+				str_wsa_last_error = std::to_string( ::WSAGetLastError() );
+
+				::EnterCriticalSection(thread_args->log_critical_sec);
+				thread_args->logger->MakeErrorLog( "WorkThread ID = " + str_current_thread_id + ": Disconnect error: " + str_wsa_last_error );
+				::LeaveCriticalSection(thread_args->log_critical_sec);
 
 				continue;
 			}
@@ -283,8 +323,12 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	}
 	catch( const std::runtime_error& rt_ex )
 	{
-		std::cout << "runtime_error exception handled in WorkThread with ID = " << ::GetCurrentThreadId() << " :" << rt_ex.what() << std::endl;
+		std::string log_line = "runtime_error exception handled in WorkThread with ID = " + str_current_thread_id + " :" + rt_ex.what();
 
+		::EnterCriticalSection(thread_args->log_critical_sec);
+		thread_args->logger->MakeErrorLog(log_line);
+		::LeaveCriticalSection(thread_args->log_critical_sec);
+		
 		::shutdown( accept_sock, SD_SEND );
 		::closesocket(accept_sock);
 
@@ -292,7 +336,11 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	}
 	catch( const std::logic_error& lg_ex )
 	{
-		std::cout << "logic_error exception handled in WorkThread with ID = " << ::GetCurrentThreadId() << " :" << lg_ex.what() << std::endl;
+		std::string log_line = "logic_error exception handled in WorkThread with ID = " + str_current_thread_id + " :" + lg_ex.what();
+
+		::EnterCriticalSection(thread_args->log_critical_sec);
+		thread_args->logger->MakeErrorLog(log_line);
+		::LeaveCriticalSection(thread_args->log_critical_sec);
 
 		::shutdown( accept_sock, SD_SEND );
 		::closesocket(accept_sock);
@@ -301,7 +349,11 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	}
 	catch( const std::exception& ex )
 	{
-		std::cout << "Common exception handled in WorkThread with ID = " << ::GetCurrentThreadId() << " :" << ex.what() << std::endl;
+		std::string log_line = "Common exception handled in WorkThread with ID = " + str_current_thread_id + " :" + ex.what();
+
+		::EnterCriticalSection(thread_args->log_critical_sec);
+		thread_args->logger->MakeErrorLog(log_line);
+		::LeaveCriticalSection(thread_args->log_critical_sec);
 
 		::shutdown( accept_sock, SD_SEND );
 		::closesocket(accept_sock);
@@ -310,8 +362,15 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 	}
 	catch(...)
 	{
-		std::cout << "Unknown exception handled in WorkThread with ID = " << ::GetCurrentThreadId() << " :" << std::endl;
+		std::string log_line = "Unknown exception handled in WorkThread with ID = " + str_current_thread_id;
+
+		::EnterCriticalSection(thread_args->log_critical_sec);
+		thread_args->logger->MakeErrorLog(log_line);
+		::LeaveCriticalSection(thread_args->log_critical_sec);
 		
+		::shutdown( accept_sock, SD_SEND );
+		::closesocket(accept_sock);
+
 		return 4;
 	}
 	
