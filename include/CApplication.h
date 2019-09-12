@@ -16,7 +16,7 @@
 class CApplication
 {
 public:
-	explicit CApplication( int num_of_threads, const std::string& listen_port, CLogger* logger );
+	explicit CApplication( int num_of_threads, const std::string& listen_port, CLogger* logger, CRITICAL_SECTION* p_log_critical_sec );
 	CApplication( const CApplication& other ) = delete;
 	CApplication( CApplication&& other ) = delete;
 	~CApplication();
@@ -32,6 +32,7 @@ public:
 
 private:
 	CLogger* m_logger;
+	CRITICAL_SECTION* m_log_critical_sec;
 
 	std::vector<std::pair<HANDLE, DWORD>> m_thread_pool;
 	int m_num_of_threads;

@@ -8,13 +8,14 @@ namespace
 	static bool s_termination_flag = false;
 }
 
-CApplication::CApplication( int num_of_threads, const std::string& listen_port, CLogger* logger )
+CApplication::CApplication( int num_of_threads, const std::string& listen_port, CLogger* logger, CRITICAL_SECTION* p_log_critical_sec )
 	: m_listen_sock(INVALID_SOCKET),
 	  m_is_wsa_init(false),
 	  m_is_listen_sock_init(false),
 	  m_is_thread_pool_init(false)
 {
 	m_logger = logger;
+	m_log_critical_sec = p_log_critical_sec;
 
 	if( num_of_threads == 0 )
 	{
