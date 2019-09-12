@@ -22,7 +22,6 @@ int main( int argc, char** argv )
 			logger.MakeErrorLog( "Bad input params: " + input_params.m_error_reason );
 		
 			::DeleteCriticalSection(&log_critical_sec);
-			std::getchar();
 			return 1;
 		}
 
@@ -72,7 +71,6 @@ int main( int argc, char** argv )
 		logger.MakeErrorLog( "runtime_error exception handled in MAIN: " + std::string( rt_ex.what() ) );
 
 		::DeleteCriticalSection(&log_critical_sec);
-		std::getchar();
 		return 2;
 	}
 	catch( const std::logic_error& lg_ex )
@@ -80,7 +78,6 @@ int main( int argc, char** argv )
 		logger.MakeErrorLog( "logic_error exception handled in MAIN: " + std::string( lg_ex.what() ) );
 
 		::DeleteCriticalSection(&log_critical_sec);
-		std::getchar();
 		return 3;
 	}
 	catch( const std::exception& ex )
@@ -88,7 +85,6 @@ int main( int argc, char** argv )
 		logger.MakeErrorLog( "Common exception handled in MAIN: " + std::string( ex.what() ) );
 
 		::DeleteCriticalSection(&log_critical_sec);
-		std::getchar();
 		return 4;
 	}
 	catch(...)
@@ -96,11 +92,9 @@ int main( int argc, char** argv )
 		logger.MakeErrorLog("Unknown exception handled in MAIN");
 
 		::DeleteCriticalSection(&log_critical_sec);
-		std::getchar();
 		return 5;
 	}
 
 	::DeleteCriticalSection(&log_critical_sec);
-	std::getchar();
 	return 0;
 }
