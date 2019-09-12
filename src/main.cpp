@@ -26,13 +26,15 @@ int main( int argc, char** argv )
 			return 1;
 		}
 
+		// CONTROL PANEL print
+		::EnterCriticalSection(&log_critical_sec);
+		std::cout << s_main_menu << std::endl;
+		::LeaveCriticalSection(&log_critical_sec);
+
 		CApplication app( input_params.m_threads_num, input_params.m_port, &logger, &log_critical_sec );
 		app.Listen();
 		
 		short res = 255;
-		::EnterCriticalSection(&log_critical_sec);
-		std::cout << s_main_menu << std::endl;
-		::LeaveCriticalSection(&log_critical_sec);
 		while(std::cin)
 		{
 			std::cin >> res;
