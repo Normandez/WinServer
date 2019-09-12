@@ -5,7 +5,6 @@
 
 namespace
 {
-	static CRITICAL_SECTION critical_sec;
 	static bool s_termination_flag = false;
 }
 
@@ -17,7 +16,6 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port, 
 {
 	m_logger = logger;
 
-	::InitializeCriticalSection(&critical_sec);
 	if( num_of_threads == 0 )
 	{
 		SYSTEM_INFO sys_info;
@@ -130,9 +128,7 @@ void CApplication::Listen()
 void CApplication::StopAllThreads()
 {
 	// Set termination flag
-	::EnterCriticalSection(&critical_sec);
 	s_termination_flag = true;
-	::LeaveCriticalSection(&critical_sec);
 	
 	// Stop listening
 	::closesocket(m_listen_sock);
@@ -168,7 +164,6 @@ size_t CApplication::GetWorkThreadsNum() const
 
 void CApplication::PrintWorkThreads() const
 {
-	::EnterCriticalSection(&critical_sec);
 	if( m_thread_pool.empty() || s_termination_flag )
 	{
 		std::cout << "ThreadPool is empty" << std::endl;
@@ -178,7 +173,6 @@ void CApplication::PrintWorkThreads() const
 	{
 		std::cout << "WorkThread #" << it << ", HANDLE = " << m_thread_pool.at(it).first << ", ID = " << m_thread_pool.at(it).second << std::endl;
 	}
-	::LeaveCriticalSection(&critical_sec);
 }
 
 DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
@@ -205,9 +199,7 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 			accept_sock = ::accept( ( (SOCKET*)param )[0], NULL, NULL );
 			if( accept_sock == INVALID_SOCKET && !s_termination_flag )
 			{
-				::EnterCriticalSection(&critical_sec);
 				std::cout << "Invalid listen_sock. ERROR: " << ::WSAGetLastError() << std::endl;
-				::LeaveCriticalSection(&critical_sec);
 				::closesocket(accept_sock);
 				return 1;
 			}
