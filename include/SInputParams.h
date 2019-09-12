@@ -39,6 +39,7 @@ struct SInputParams
 				}
 				catch( const std::invalid_argument& inv_arg_ex )
 				{
+					(void)inv_arg_ex;
 					m_error_reason = "Invalid '" + s_threads_num_param_pattern + "' value: not a digit.";
 					return;
 				}
@@ -52,6 +53,7 @@ struct SInputParams
 				}
 				catch( const std::invalid_argument& inv_arg_ex )
 				{
+					(void)inv_arg_ex;
 					m_error_reason = "Invalid '" + s_port_param_pattern + "' value: not a digit.";
 					return;
 				}

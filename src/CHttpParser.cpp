@@ -39,6 +39,7 @@ bool CHttpParser::IsPostRequest() const
 	}
 	catch( const std::out_of_range& out_of_range_ex )
 	{
+		(void)out_of_range_ex;
 		return false;
 	}
 	
