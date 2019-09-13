@@ -17,6 +17,7 @@ CApplication::CApplication( int num_of_threads, const std::string& listen_port, 
 	m_logger = logger;
 	m_log_critical_sec = p_log_critical_sec;
 
+	// Set work threads num
 	if( num_of_threads == 0 )
 	{
 		SYSTEM_INFO sys_info;

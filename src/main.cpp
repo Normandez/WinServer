@@ -33,6 +33,7 @@ int main( int argc, char** argv )
 		CApplication app( input_params.m_threads_num, input_params.m_port, &logger, &log_critical_sec );
 		app.Listen();
 		
+		// Input handling
 		short res = 255;
 		while(std::cin)
 		{
