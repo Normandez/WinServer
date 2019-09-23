@@ -1,6 +1,8 @@
 # WinServer
 Example of native WinSock2 API Server with parallel clients servicing.
 
+Client: https://github.com/Normandez/WinServerClient
+
 # Usage
 _WinServer.exe [--threads-num=<number_of_work_threads>] [--port=<listen_port>]_
 
