@@ -275,21 +275,21 @@ DWORD WINAPI CApplication::ProceedResponse( LPVOID param )
 							std::string data = data_match[1].str();
 							std::reverse( data.begin(), data.end() );
 
-							response_data = http_parser.ConstructResponse( "\"{\\\"data\\\":\\\"" + data + "\\\"}\"", true );
+							response_data = http_parser.ConstructResponse( "{\"data\":\"" + data + "\"}", true );
 						}
 						else
 						{
-							response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"'data' field not found\\\"}\"", false );
+							response_data = http_parser.ConstructResponse( "{\"error\":\"'data' field not found\"}", false );
 						}
 					}
 					else
 					{
-						response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not application/json content type\\\"}\"", false );
+						response_data = http_parser.ConstructResponse( "{\"error\":\"Not application/json content type\"}", false );
 					}
 				}
 				else
 				{
-					response_data = http_parser.ConstructResponse( "\"{\\\"error\\\":\\\"Not POST request\\\"}\"", false );
+					response_data = http_parser.ConstructResponse( "{\"error\":\"Not POST request\"}", false );
 				}
 			}
 
