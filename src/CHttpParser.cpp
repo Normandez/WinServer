@@ -77,12 +77,14 @@ std::string CHttpParser::ConstructResponse( const std::string& response_data, bo
 {
 	std::string constructed_response = "";
 
-	if(is_success) constructed_response += "HTTP /1.1 200 OK\n";
-	else constructed_response += "HTTP /1.1 400 Bad Request\n";
-	constructed_response += "Content-Type: application/json\n";
+	if(is_success) constructed_response += "HTTP /1.1 200 OK\r\n";
+	else constructed_response += "HTTP/1.1 400 Bad Request\r\n";
+	constructed_response += "Content-Type: application/json\r\n";
 	constructed_response += "Content-Length: " + std::to_string( (int)response_data.size() );
-	constructed_response += "\n";
-	constructed_response += "Server: WinServer\n\n";
+	constructed_response += "\r\n";
+	constructed_response += "Server: WinServer\r\n";
+	constructed_response += "Connection: Closed\r\n";
+	constructed_response += "\r\n";
 	constructed_response += response_data;
 
 	return constructed_response;
